@@ -1,4 +1,6 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import kotlin.jvm.optionals.getOrNull
 
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
@@ -6,9 +8,22 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.swiftklib)
+    id("pro-layne-amps-kmp-publish")
 }
 
 kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
+    val versionCatalog: VersionCatalog = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+    jvmToolchain {
+        val javaVersion = versionCatalog.findVersion("java").getOrNull()?.requiredVersion
+            ?: throw GradleException("Version 'java' is not specified in the version catalog")
+        languageVersion = JavaLanguageVersion.of(javaVersion)
+    }
+
     androidTarget {
         compilations.all {
             compileTaskProvider.configure {
@@ -18,6 +33,8 @@ kotlin {
             }
         }
     }
+
+    jvm("desktop")
     
     val xcf = XCFramework()
     listOf(
@@ -36,6 +53,29 @@ kotlin {
             isStatic = true
         }
     }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+//        moduleName =
+//        moduleName = "amps"
+//        browser {
+//            val rootDirPath = project.rootDir.path
+//            val projectDirPath = project.projectDir.path
+//            commonWebpackConfig {
+//                outputFileName = "amps.js"
+//                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+//                    static = (static ?: mutableListOf()).apply {
+//                        // Serve sources to debug inside browser
+//                        add(rootDirPath)
+//                        add(projectDirPath)
+//                    }
+//                }
+//            }
+//        }
+//        binaries.executable()
+    }
+
+    explicitApi()
 
     sourceSets {
         commonMain.dependencies {
